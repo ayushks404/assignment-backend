@@ -110,3 +110,28 @@ export const getIntakeHistory = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const deleteIntake = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const log = await IntakeLog.findById(id);
+    if (!log) {
+      return res.status(404).json({ message: 'Intake log not found' });
+    }
+
+    // Ownership check
+    if (log.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "You cannot delete another user's entry" });
+    }
+
+    await IntakeLog.findByIdAndDelete(id);
+
+    return res.status(200).json({ message: 'Intake log deleted successfully' });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid intake log ID' });
+    }
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
