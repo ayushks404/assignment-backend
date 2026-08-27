@@ -61,3 +61,52 @@ export const getTodayIntake = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const getIntakeHistory = async (req, res) => {
+  let fromDate = req.query.from ? new Date(req.query.from) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  let toDate = req.query.to ? new Date(req.query.to) : new Date();
+
+  fromDate.setUTCHours(0, 0, 0, 0);
+  toDate.setUTCHours(23, 59, 59, 999);
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const goalMl = user.dailyGoalMl;
+
+    // Fetch logs within date range
+    const logs = await IntakeLog.find({
+      user: req.user.id,
+      loggedAt: { $gte: fromDate, $lte: toDate }
+    }).sort({ loggedAt: -1 });
+
+    // Group by date string (YYYY-MM-DD)
+    const groups = {};
+    for (let i = 0; i < logs.length; i++) {
+      const log = logs[i];
+      const dateStr = log.loggedAt.toISOString().split('T')[0];
+      if (!groups[dateStr]) {
+        groups[dateStr] = 0;
+      }
+      groups[dateStr] += log.amountMl;
+    }
+
+    // Map groups to required array shape
+    const history = [];
+    const dates = Object.keys(groups).sort().reverse();
+    for (let i = 0; i < dates.length; i++) {
+      const date = dates[i];
+      history.push({
+        date: date,
+        totalMl: groups[date],
+        goalMl: goalMl
+      });
+    }
+
+    return res.status(200).json(history);
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
