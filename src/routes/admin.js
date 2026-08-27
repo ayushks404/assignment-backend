@@ -1,5 +1,5 @@
 import express from 'express';
-import { listUsers, getUserHistory } from '../controllers/admin.js';
+import { listUsers, getUserHistory, updateGoal, deleteUser } from '../controllers/admin.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roles.js';
 
@@ -11,5 +11,7 @@ router.use(requireRole('admin'));
 
 router.get('/users', listUsers);
 router.get('/users/:id/history', getUserHistory);
+router.patch('/users/:id/goal', updateGoal);
+router.delete('/users/:id', deleteUser);
 
 export default router;
