@@ -1,36 +1,24 @@
-import { body, validationResult } from 'express-validator';
+import { verifyToken } from '../utils/jwt.js';
 
-export const registerRules = [
-  body('name')
-    .trim()
-    .notEmpty().withMessage('Name is required'),
+export const protect = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  body('email')
-    .trim()
-    .normalizeEmail()
-    .isEmail().withMessage('Please provide a valid email'),
-
-  body('password')
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-];
-
-export const loginRules = [
-  body('email')
-    .trim()
-    .normalizeEmail()
-    .isEmail().withMessage('Please provide a valid email'),
-
-  body('password')
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-];
-
-export const validate = (req, res, next) => {
-  const result = validationResult(req);
-  if (!result.isEmpty()) {
-    return res.status(400).json({
-      message: 'Validation failed',
-      errors: result.array().map(e => ({ field: e.path, msg: e.msg })),
-    });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Not authorized, token missing' });
   }
-  next();
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = verifyToken(token);
+    
+    req.user = {
+      id: decoded.id,
+      role: decoded.role
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Not authorized, token invalid or expired' });
+  }
 };

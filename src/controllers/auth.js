@@ -1,8 +1,25 @@
 import User from '../models/User.js';
 import { signToken } from '../utils/jwt.js';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password } = req.body || {};
+
+  // Input validation
+  const errors = [];
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    errors.push({ field: 'name', msg: 'Name is required' });
+  }
+  if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    errors.push({ field: 'email', msg: 'Please provide a valid email' });
+  }
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    errors.push({ field: 'password', msg: 'Password must be at least 6 characters long' });
+  }
+  if (errors.length > 0) {
+    return res.status(400).json({ message: 'Validation failed', errors });
+  }
 
   try {
     // Check if email already registered
@@ -40,7 +57,19 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
+
+  // Input validation
+  const errors = [];
+  if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    errors.push({ field: 'email', msg: 'Please provide a valid email' });
+  }
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    errors.push({ field: 'password', msg: 'Password must be at least 6 characters long' });
+  }
+  if (errors.length > 0) {
+    return res.status(400).json({ message: 'Validation failed', errors });
+  }
 
   try {
     // Select user by email and explicitly include password field
