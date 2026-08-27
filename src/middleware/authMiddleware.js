@@ -1,35 +1,36 @@
-export const validateRegister = (req, res, next) => {
-  const { name, email, password } = req.body;
-  const errors = [];
+import { body, validationResult } from 'express-validator';
 
-  // 1. Validate Name
-  if (!name || name.trim() === '') {
-    errors.push({
-      path: 'name',
-      msg: 'Name is required'
+export const registerRules = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage('Name is required'),
+
+  body('email')
+    .trim()
+    .normalizeEmail()
+    .isEmail().withMessage('Please provide a valid email'),
+
+  body('password')
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+];
+
+export const loginRules = [
+  body('email')
+    .trim()
+    .normalizeEmail()
+    .isEmail().withMessage('Please provide a valid email'),
+
+  body('password')
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+];
+
+export const validate = (req, res, next) => {
+  const result = validationResult(req);
+  if (!result.isEmpty()) {
+    return res.status(400).json({
+      message: 'Validation failed',
+      errors: result.array().map(e => ({ field: e.path, msg: e.msg })),
     });
   }
-
-  // 2. Simple Email check
-  if (!email || !email.includes('@')) {
-    errors.push({
-      path: 'email',
-      msg: 'Please provide a valid email'
-    });
-  }
-
-  // 3. Validate Password length
-  if (!password || password.length < 6) {
-    errors.push({
-      path: 'password',
-      msg: 'Password must be at least 6 characters long'
-    });
-  }
-
-  // If there are validation errors, return them
-  if (errors.length > 0) {
-    return res.status(400).json({ errors: errors });
-  }
-
   next();
 };

@@ -38,3 +38,36 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Select user by email and explicitly include password field
+    const user = await User.findOne({ email: email }).select('+password');
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if password is correct
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = signToken({ id: user._id, role: user.role });
+
+    return res.status(200).json({
+      token: token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
