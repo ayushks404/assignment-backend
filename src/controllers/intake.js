@@ -41,7 +41,7 @@ export const getTodayIntake = async (req, res) => {
     const logs = await IntakeLog.find({
       user: req.user.id,
       loggedAt: { $gte: startOfToday, $lte: endOfToday }
-    });
+    }).sort({ loggedAt: -1 });
 
     let totalMl = 0;
     for (let i = 0; i < logs.length; i++) {
@@ -55,7 +55,8 @@ export const getTodayIntake = async (req, res) => {
       totalMl: totalMl,
       goalMl: goalMl,
       remainingMl: remainingMl,
-      percent: percent
+      percent: percent,
+      logs: logs
     });
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error' });
