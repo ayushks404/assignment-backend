@@ -116,3 +116,36 @@ export const deleteUser = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const deleteUserDayLogs = async (req, res) => {
+  const { id, date } = req.params;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ message: 'Invalid date format, expected YYYY-MM-DD' });
+  }
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const startOfDay = new Date(`${date}T00:00:00.000Z`);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(`${date}T23:59:59.999Z`);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const result = await IntakeLog.deleteMany({
+      user: id,
+      loggedAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    return res.status(200).json({ message: 'Logs deleted', deletedCount: result.deletedCount });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
